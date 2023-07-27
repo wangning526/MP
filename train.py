@@ -78,16 +78,14 @@ for epoch in range(epochs):
     train_loss = train_one_epoch(model=model,
                                             optimizer=optimizer,
                                             data_loader=train_loader,
-                                            device=device,
-                                            epoch=epoch)
+                                            device=device)
 
     scheduler.step()
 
     # validate
     val_loss = evaluate(model=model,
                                  data_loader=val_loader,
-                                 device=device,
-                                 epoch=epoch)
+                                 device=device)
     tags = ["train_loss", "val_loss", "learning_rate"]
     tb_writer.add_scalar(tags[0], train_loss, epoch)
     tb_writer.add_scalar(tags[1], val_loss, epoch)
