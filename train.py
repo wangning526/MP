@@ -14,9 +14,12 @@ from vit_model import vit_base_patch15_75_360 as vit_model
 from matplotlib import pyplot as plt
 import datetime as dt
 import numpy as np
+import time
+
+
+stime = time.time()
 # 数据加载和预处理
 transform = transforms.Compose([
-    transforms.ToTensor(),
     transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
 ])
 
@@ -31,9 +34,10 @@ batch_size = vitargs.batch_size
 epochs = vitargs.epochs
 learning_rate = vitargs.lr
 #加载数据
+print('==> Loading data...')
 data = []
 start_date = dt.date(2017, 6, 1)
-end_date = dt.date(2017, 6, 10)
+end_date = dt.date(2018, 5, 31)
 current_date = start_date
 while current_date <= end_date:
     time = current_date.strftime('%Y%m%d')
@@ -65,6 +69,8 @@ train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True,pin_me
 val_loader = DataLoader(val_data, batch_size=batch_size, shuffle=False,pin_memory=True)
 
 
+
+print('==> Building model..')
 # 初始化模型、损失函数和优化器
 device = torch.device(vitargs.device if torch.cuda.is_available() else "cpu")
 model = vit_model().to(device)
@@ -80,16 +86,20 @@ optimizer.zero_grad()
 
 train_losses = []
 val_losses = []
-
+print('==> Start training..')
 for epoch in range(epochs):
     # train
     loss = torch.zeros(1)
     for batch_idx, data in enumerate(train_loader):
         input = data[:, :3, :, :]  # 取前三个通道作为输入，形状为 (5, 3, 75, 360)
+        input = transform(input)
         output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (5, 1, 75, 360)
-        output = output.view(batch_size, 27000)
         input = input.to(torch.float32)
+        output = output.squeeze(1)
         output = output.to(torch.float32)
+        min_val = torch.min(output)
+        max_val = torch.max(output)
+        output = (output - min_val) / (max_val - min_val)
         pred = model(input.to(device))
         pred = pred.to(torch.float32)
         loss = criterion(pred, output.to(device))
@@ -97,41 +107,50 @@ for epoch in range(epochs):
         if not torch.isfinite(loss):
             print('WARNING: non-finite loss, ending training ', loss)
             sys.exit(1)
-
         optimizer.step()
         optimizer.zero_grad()
+        loss = loss.detach().cpu().item()
         loss += loss.item()
     train_loss = loss / len(train_loader)
     train_losses.append(train_loss)
-    scheduler.step(train_loss)
-
+    scheduler.step()
     print(
-        f'Processing: [{epoch} / {vitargs.epochs}] | Loss: {round((train_loss / len(train_loader)).item(), 6)} | Learning Rate: {optimizer.state_dict()["param_groups"][0]["lr"]}')
-
+        f'Processing: [{epoch} / {vitargs.epochs}] | Loss: {round((train_loss / len(train_loader)).item(), 6)} | Learning Rate: {round(optimizer.state_dict()["param_groups"][0]["lr"],6)} ')
 # validate
 val_loss = torch.zeros(1)
 with torch.no_grad():
     for batch_idx, data in enumerate(train_loader):
         input = data[:, :3, :, :]  # 取前三个通道作为输入，形状为 (5, 3, 75, 360)
         output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (5, 1, 75, 360)
-        output = output.view(batch_size, 27000)
         input = input.to(torch.float32)
+        output = output.squeeze(1)
         output = output.to(torch.long)
+        min_val = torch.min(output)
+        max_val = torch.max(output)
+        output = (output - min_val) / (max_val - min_val)
         pred = model(input.to(device))
         loss = criterion(pred, output.to(device))
-        val_loss.append(loss.item())
+        loss = loss.detach().cpu().item()
+        val_loss += loss.item()
     val_loss = val_loss / len(val_loader)
     val_losses.append(val_loss.item())
     print(f'Test Loss: {round((val_loss/len(val_loader)).item(), 6)}')
+
+# 保存模型
 if os.path.exists("weights") is False:
     os.makedirs("weights")
 torch.save(model.state_dict(), "./weights/model.pth")
+
 # 绘制损失函数图像
 plt.plot(range(1, vitargs.epochs + 1), train_losses, label='Train Loss')
-plt.plot(range(1, vitargs.epochs + 1, 10), val_losses, label='Val Loss')
+plt.plot(range(1, vitargs.epochs + 1), val_losses, label='Val Loss')
 plt.xlabel('Epoch')
 plt.ylabel('Loss')
 plt.title('Train and Val Loss')
 plt.legend()
 plt.savefig('loss.png')
 plt.show()
+etime = time.time() - stime
+m, s = divmod(etime, 60)
+h, m = divmod(m, 60)
+print(f'Total time: {int(h):02d}:{int(m):02d}:{int(s):02d}')

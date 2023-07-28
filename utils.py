@@ -1,8 +1,7 @@
-import os
 import sys
 import torch
 from tqdm import tqdm
-import matplotlib.pyplot as plt
+
 
 @torch.no_grad()
 def train_one_epoch(model, optimizer, data_loader, device):

@@ -185,8 +185,7 @@ class VisionTransformer(nn.Module):
         self.norm = norm_layer(embed_dim)
 
         #output layer
-        self.head = nn.Linear(120*675, 27000)
-
+        self.head = nn.Conv2d(in_channels=vitargs.batch_size, out_channels=vitargs.batch_size, kernel_size=2, stride=2, padding=(15,23))
         # Weight init
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
         self.apply(_init_vit_weights)
@@ -198,7 +197,6 @@ class VisionTransformer(nn.Module):
         x = self.pos_drop(x + self.pos_embed)
         x = self.blocks(x)
         x = self.norm(x)
-        x = x.view(batch_size,120*675)
         x = self.head(x)
         return x
 
@@ -221,7 +219,8 @@ def vit_base_patch15_75_360():
     model = VisionTransformer(input_size=(75,360),
                               patch_size=15,
                               embed_dim=675,
-                              depth=10,
-                              num_heads=5)
+                              depth=12,
+                              num_heads=15,
+                              mlp_ratio=1)
     return model
 
