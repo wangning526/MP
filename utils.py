@@ -14,7 +14,7 @@ def train_one_epoch(model, optimizer, data_loader, device):
     data_loader = tqdm(data_loader, file=sys.stdout)
     for step, data in enumerate(data_loader):
         input  = data[:-1]
-        output = data[-1]
+        output = data[-1].reshape(-1)
 
         pred = model(input.to(device))
         loss = loss_function(pred, output.to(device))
@@ -38,7 +38,7 @@ def evaluate(model, data_loader, device):
     for step, data in enumerate(data_loader):
 
         input  = data[:-1]
-        output = data[-1]
+        output = data[-1].reshape(-1)
 
         pred = model(input.to(device))
         loss = loss_function(pred, output.to(device))
