@@ -1,11 +1,8 @@
-"""
 
-"""
 from functools import partial
-from collections import OrderedDict
 import torch
 import torch.nn as nn
-import math
+
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -152,23 +149,23 @@ class VisionTransformer(nn.Module):
                  act_layer=None):
         """
         Args:
-            img_size (int, tuple): input image size
-            patch_size (int, tuple): patch size
-            in_c (int): number of input channels
-            embed_dim (int): embedding dimension
-            depth (int): depth of transformer
-            num_heads (int): number of attention heads
-            mlp_ratio (int): ratio of mlp hidden dim to embedding dim
-            qkv_bias (bool): enable bias for qkv if True
-            qk_scale (float): override default qk scale of head_dim ** -0.5 if set
-            drop_ratio (float): dropout rate
-            attn_drop_ratio (float): attention dropout rate
-            drop_path_ratio (float): stochastic depth rate
-            embed_layer (nn.Module): patch embedding layer
-            norm_layer: (nn.Module): normalization layer
+            img_size (int, tuple): input  size：75*360
+            patch_size (int, tuple): patch size：15
+            in_c (int): number of input channels：3
+            embed_dim (int): embedding dimension：675
+            depth (int): depth of transformer：12
+            num_heads (int): number of attention heads：15
+            mlp_ratio (int): ratio of mlp hidden dim to embedding dim：4
+            qkv_bias (bool): enable bias for qkv if True：True
+            qk_scale (float): override default qk scale of head_dim ** -0.5 if set：None
+            drop_ratio (float): dropout rate：0
+            attn_drop_ratio (float): attention dropout rate：0
+            drop_path_ratio (float): stochastic depth rate：0
+            embed_layer (nn.Module): patch embedding layer：PatchEmbed
+            norm_layer: (nn.Module): normalization layer：None
         """
         super(VisionTransformer, self).__init__()
-        self.num_features = self.embed_dim = embed_dim  # num_features for consistency with other models
+        self.num_features = self.embed_dim = embed_dim
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         act_layer = act_layer or nn.GELU
 
@@ -186,7 +183,6 @@ class VisionTransformer(nn.Module):
             for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
-
 
         #output layer
         self.head = nn.Linear(self.num_features, 27000)
@@ -223,11 +219,11 @@ def _init_vit_weights(m):
         nn.init.ones_(m.weight)
 
 
-def vit_base_patch16_224():
-    model = VisionTransformer(img_size=224,
-                              patch_size=16,
-                              embed_dim=768,
-                              depth=12,
-                              num_heads=12)
+def vit_base_patch15_75_360():
+    model = VisionTransformer(img_size=75*360,
+                              patch_size=15,
+                              embed_dim=675,
+                              depth=8,
+                              num_heads=15)
     return model
 
