@@ -220,7 +220,7 @@ def _init_vit_weights(m):
 
 
 def vit_base_patch15_75_360():
-    model = VisionTransformer(img_size=75*360,
+    model = VisionTransformer(img_size=(75,360),
                               patch_size=15,
                               embed_dim=675,
                               depth=8,

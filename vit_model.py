@@ -142,13 +142,13 @@ class Block(nn.Module):
         return x
 
 class VisionTransformer(nn.Module):
-    def __init__(self, img_size=75*360, patch_size=15, in_c=3,
+    def __init__(self, input_size=(75,360), patch_size=15, in_c=3,
                  embed_dim=675, depth=12, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
                  qk_scale=None,drop_ratio=0.,attn_drop_ratio=0., drop_path_ratio=0., embed_layer=PatchEmbed, norm_layer=None,
                  act_layer=None):
         """
         Args:
-            img_size (int, tuple): input  size：75*360
+            input_size (int, tuple): input  size：75*360
             patch_size (int, tuple): patch size：15
             in_c (int): number of input channels：3
             embed_dim (int): embedding dimension：675
@@ -168,7 +168,7 @@ class VisionTransformer(nn.Module):
         norm_layer = norm_layer or partial(nn.LayerNorm, eps=1e-6)
         act_layer = act_layer or nn.GELU
 
-        self.patch_embed = embed_layer(img_size=img_size, patch_size=patch_size, in_c=in_c, embed_dim=embed_dim)
+        self.patch_embed = embed_layer(input_size=input_size, patch_size=patch_size, in_c=in_c, embed_dim=embed_dim)
         num_patches = self.patch_embed.num_patches
 
         self.pos_embed = nn.Parameter(torch.zeros(1, num_patches, embed_dim))
@@ -184,23 +184,25 @@ class VisionTransformer(nn.Module):
         self.norm = norm_layer(embed_dim)
 
         #output layer
-        self.head = nn.Linear(self.num_features, 27000)
+        self.head = nn.Linear(120*675, 27000)
 
         # Weight init
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
-        if self.dist_token is not None:
-            nn.init.trunc_normal_(self.dist_token, std=0.02)
-
-        nn.init.trunc_normal_(self.cls_token, std=0.02)
         self.apply(_init_vit_weights)
 
     def forward(self, x):
         # [B, C, H, W] -> [B, num_patches:120, embed_dim:675]
-        x = self.patch_embed(x)  # [B, 196, 768]
+        x = self.patch_embed(x)  # [B, 120, 675]
         x = self.pos_drop(x + self.pos_embed)
         x = self.blocks(x)
         x = self.norm(x)
+
+        x = x.view(1, -1)
+        print('front')
+        print(x.shape)
         x = self.head(x)
+        print('after')
+        print(x.shape)
         return x
 
 
@@ -219,7 +221,7 @@ def _init_vit_weights(m):
 
 
 def vit_base_patch15_75_360():
-    model = VisionTransformer(img_size=75*360,
+    model = VisionTransformer(input_size=(75,360),
                               patch_size=15,
                               embed_dim=675,
                               depth=8,
