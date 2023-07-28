@@ -1,7 +1,8 @@
 from functools import partial
 import torch
 import torch.nn as nn
-
+import vit_args
+vitargs = vit_args.get_args()
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -143,7 +144,7 @@ class Block(nn.Module):
 
 class VisionTransformer(nn.Module):
     def __init__(self, input_size=(75,360), patch_size=15, in_c=3,
-                 embed_dim=675, depth=12, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
+                 embed_dim=675, depth=1, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
                  qk_scale=None,drop_ratio=0.,attn_drop_ratio=0., drop_path_ratio=0., embed_layer=PatchEmbed, norm_layer=None,
                  act_layer=None):
         """
@@ -191,18 +192,14 @@ class VisionTransformer(nn.Module):
         self.apply(_init_vit_weights)
 
     def forward(self, x):
+        batch_size = vitargs.batch_size
         # [B, C, H, W] -> [B, num_patches:120, embed_dim:675]
         x = self.patch_embed(x)  # [B, 120, 675]
         x = self.pos_drop(x + self.pos_embed)
         x = self.blocks(x)
         x = self.norm(x)
-
-        x = x.view(1, -1)
-        print('front')
-        print(x.shape)
+        x = x.view(batch_size,120*675)
         x = self.head(x)
-        print('after')
-        print(x.shape)
         return x
 
 
@@ -224,7 +221,7 @@ def vit_base_patch15_75_360():
     model = VisionTransformer(input_size=(75,360),
                               patch_size=15,
                               embed_dim=675,
-                              depth=8,
-                              num_heads=15)
+                              depth=10,
+                              num_heads=5)
     return model
 

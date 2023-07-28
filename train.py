@@ -33,7 +33,7 @@ learning_rate = vitargs.lr
 #加载数据
 data = []
 start_date = dt.date(2017, 6, 1)
-end_date = dt.date(2018, 5, 31)
+end_date = dt.date(2017, 6, 10)
 current_date = start_date
 while current_date <= end_date:
     time = current_date.strftime('%Y%m%d')
@@ -89,9 +89,9 @@ for epoch in range(epochs):
         output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (5, 1, 75, 360)
         output = output.view(batch_size, 27000)
         input = input.to(torch.float32)
-        output = output.to(torch.long)
+        output = output.to(torch.float32)
         pred = model(input.to(device))
-        print(pred.shape,output.shape)
+        pred = pred.to(torch.float32)
         loss = criterion(pred, output.to(device))
         loss.backward()
         if not torch.isfinite(loss):

@@ -1,4 +1,3 @@
-
 from torch.utils.data import Dataset
 class MPDataset(Dataset):
     def __init__(self, data):
