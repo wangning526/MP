@@ -26,9 +26,8 @@ class DropPath(nn.Module):
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
 
-
 class PatchEmbed(nn.Module):
-    def __init__(self, input_size=(75,360), patch_size=15, in_c=3, embed_dim=675, norm_layer=None):
+    def __init__(self, input_size=(75,180), patch_size=15, in_c=3, embed_dim=675, norm_layer=None):
         super().__init__()
         patch_size = (patch_size, patch_size)
         self.input_size = input_size
@@ -91,8 +90,10 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
+
+
 class Mlp(nn.Module):
-    #MLP Block
+    # MLP Block
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         # in_features: 675
@@ -112,6 +113,7 @@ class Mlp(nn.Module):
         x = self.fc2(x)
         x = self.drop(x)
         return x
+
 
 class Block(nn.Module):
     #Encoder Block
@@ -141,9 +143,8 @@ class Block(nn.Module):
         x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
-
 class VisionTransformer(nn.Module):
-    def __init__(self, input_size=(75,360), patch_size=15, in_c=3,
+    def __init__(self, input_size=(75,180), patch_size=15, in_c=3,
                  embed_dim=675, depth=1, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
                  qk_scale=None,drop_ratio=0.,attn_drop_ratio=0., drop_path_ratio=0., embed_layer=PatchEmbed, norm_layer=None,
                  act_layer=None):
@@ -185,7 +186,7 @@ class VisionTransformer(nn.Module):
         self.norm = norm_layer(embed_dim)
         #output layer
 
-        self.head = nn.Conv2d(in_channels=vitargs.batch_size, out_channels=vitargs.batch_size,kernel_size=2, stride=2, padding=(15,23))
+        self.head = nn.Linear(60*675,75*180)
         # Weight init
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
         self.apply(_init_vit_weights)
@@ -215,12 +216,11 @@ def _init_vit_weights(m):
         nn.init.ones_(m.weight)
 
 
-def vit_base_patch15_75_360():
-    model = VisionTransformer(input_size=(75,360),
+def vit_base_patch15_75_180():
+    model = VisionTransformer(input_size=(75,180),
                               patch_size=15,
                               embed_dim=675,
                               depth=12,
                               num_heads=15,
                               mlp_ratio=1)
     return model
-

@@ -10,7 +10,7 @@ from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim.lr_scheduler as lr_scheduler
-from vit_model import vit_base_patch15_75_360 as vit_model
+from vit_model_half import vit_base_patch15_75_180 as vit_model
 from matplotlib import pyplot as plt
 import datetime as dt
 import numpy as np
@@ -89,11 +89,11 @@ for epoch in range(epochs):
     # train
     loss = torch.zeros(1)
     for batch_idx, data in enumerate(train_loader):
-        input = data[:, :3, :, :]  # 取前三个通道作为输入，形状为 (5, 3, 75, 360)
+        input = data[:, :3, :, :]  # 取前三个通道作为输入，形状为 (B, 3, 75, 180)
         input = transform(input)
-        output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (5, 1, 75, 360)
+        output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (B, 1, 75, 180)
+        output = output.view(batch_size, 75*180)
         input = input.to(torch.float32)
-        output = output.squeeze(1)
 
         min_val = 0
         max_val = 7.0e+12
@@ -121,10 +121,10 @@ for epoch in range(epochs):
         val_loss = torch.zeros(1)
         with torch.no_grad():
             for batch_idx, data in enumerate(train_loader):
-                input = data[:, :3, :, :]  # 取前三个通道作为输入，形状为 (5, 3, 75, 360)
-                output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (5, 1, 75, 360)
+                input = data[:, :3, :, :]  # 取前三个通道作为输入，形状为 (B, 3, 75, 360)
+                output = data[:, 3:4, :, :]  # 取第四个通道作为输出，形状为 (B, 1, 75, 360)
+                output = output.view(batch_size, 75*360)
                 input = input.to(torch.float32)
-                output = output.squeeze(1)
                 output = output.to(torch.long)
                 min_val = torch.min(output)
                 max_val = torch.max(output)
