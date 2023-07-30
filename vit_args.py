@@ -2,8 +2,8 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser(description='VIT for Microplastics')
-    parser.add_argument('--input_size', type=int, default=(75,360))
-    parser.add_argument('--output_size', type=int, default=75 * 360)
+    parser.add_argument('--input_size', type=int, default=(75,90))
+    parser.add_argument('--output_size', type=int, default=75 * 90)
     parser.add_argument('--epochs', type=int, default=100)
     parser.add_argument('--batch_size', type=int, default=10)
     parser.add_argument('--patch_size', type=int, default=15)
