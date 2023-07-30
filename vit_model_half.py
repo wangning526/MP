@@ -1,8 +1,7 @@
 from functools import partial
 import torch
 import torch.nn as nn
-import vit_args
-vitargs = vit_args.get_args()
+
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -25,6 +24,7 @@ class DropPath(nn.Module):
 
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
+
 
 class PatchEmbed(nn.Module):
     def __init__(self, input_size=(75,180), patch_size=15, in_c=3, embed_dim=675, norm_layer=None):
@@ -90,10 +90,8 @@ class Attention(nn.Module):
         x = self.proj(x)
         x = self.proj_drop(x)
         return x
-
-
 class Mlp(nn.Module):
-    # MLP Block
+    #MLP Block
     def __init__(self, in_features, hidden_features=None, out_features=None, act_layer=nn.GELU, drop=0.):
         super().__init__()
         # in_features: 675
@@ -113,7 +111,6 @@ class Mlp(nn.Module):
         x = self.fc2(x)
         x = self.drop(x)
         return x
-
 
 class Block(nn.Module):
     #Encoder Block
@@ -143,14 +140,15 @@ class Block(nn.Module):
         x = x + self.drop_path(self.attn(self.norm1(x)))
         x = x + self.drop_path(self.mlp(self.norm2(x)))
         return x
+
 class VisionTransformer(nn.Module):
     def __init__(self, input_size=(75,180), patch_size=15, in_c=3,
-                 embed_dim=675, depth=1, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
+                 embed_dim=675, depth=12, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
                  qk_scale=None,drop_ratio=0.,attn_drop_ratio=0., drop_path_ratio=0., embed_layer=PatchEmbed, norm_layer=None,
                  act_layer=None):
         """
         Args:
-            input_size (int, tuple): input  size：75*360
+            input_size (int, tuple): input  size：75*180
             patch_size (int, tuple): patch size：15
             in_c (int): number of input channels：3
             embed_dim (int): embedding dimension：675
@@ -184,21 +182,25 @@ class VisionTransformer(nn.Module):
             for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
-        #output layer
 
-        self.head = nn.Linear(60*675,75*180)
+        #output layer
+        self.head = nn.Linear(40500, 13500)
+
         # Weight init
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
         self.apply(_init_vit_weights)
 
     def forward(self, x):
-        batch_size = vitargs.batch_size
         # [B, C, H, W] -> [B, num_patches:120, embed_dim:675]
         x = self.patch_embed(x)  # [B, 120, 675]
         x = self.pos_drop(x + self.pos_embed)
         x = self.blocks(x)
         x = self.norm(x)
+
+        x = x.view(x.shape[0], -1)
+        print(x.shape)
         x = self.head(x)
+        print(x.shape)
         return x
 
 
@@ -220,7 +222,7 @@ def vit_base_patch15_75_180():
     model = VisionTransformer(input_size=(75,180),
                               patch_size=15,
                               embed_dim=675,
-                              depth=12,
-                              num_heads=15,
-                              mlp_ratio=1)
+                              depth=8,
+                              num_heads=15)
     return model
+

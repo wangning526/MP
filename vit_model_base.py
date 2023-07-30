@@ -1,8 +1,13 @@
+#!/usr/bin/python3
+# _*_ coding: utf-8 _*_
+# Copyright (C) 2023 - 2023 wangning, Inc. All Rights Reserved 
+# @Time    : 2023/7/30 16:18
+# @Author  : wangning
+
 from functools import partial
 import torch
 import torch.nn as nn
-import vit_args
-vitargs = vit_args.get_args()
+
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False):
@@ -144,7 +149,7 @@ class Block(nn.Module):
 
 class VisionTransformer(nn.Module):
     def __init__(self, input_size=(75,360), patch_size=15, in_c=3,
-                 embed_dim=675, depth=1, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
+                 embed_dim=675, depth=12, num_heads=15, mlp_ratio=4.0, qkv_bias=True,
                  qk_scale=None,drop_ratio=0.,attn_drop_ratio=0., drop_path_ratio=0., embed_layer=PatchEmbed, norm_layer=None,
                  act_layer=None):
         """
@@ -183,21 +188,25 @@ class VisionTransformer(nn.Module):
             for i in range(depth)
         ])
         self.norm = norm_layer(embed_dim)
-        #output layer
 
-        self.head = nn.Conv2d(in_channels=vitargs.batch_size, out_channels=vitargs.batch_size,kernel_size=2, stride=2, padding=(15,23))
+        #output layer
+        self.head = nn.Linear(120*675, 27000)
+
         # Weight init
         nn.init.trunc_normal_(self.pos_embed, std=0.02)
         self.apply(_init_vit_weights)
 
     def forward(self, x):
-        batch_size = vitargs.batch_size
         # [B, C, H, W] -> [B, num_patches:120, embed_dim:675]
         x = self.patch_embed(x)  # [B, 120, 675]
         x = self.pos_drop(x + self.pos_embed)
         x = self.blocks(x)
         x = self.norm(x)
+
+        x = x.view(x.shape[0], -1)
+        print(x.shape)
         x = self.head(x)
+        print(x.shape)
         return x
 
 
@@ -219,8 +228,7 @@ def vit_base_patch15_75_360():
     model = VisionTransformer(input_size=(75,360),
                               patch_size=15,
                               embed_dim=675,
-                              depth=12,
-                              num_heads=15,
-                              mlp_ratio=4)
+                              depth=8,
+                              num_heads=15)
     return model
 

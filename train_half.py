@@ -50,15 +50,25 @@ while current_date <= end_date:
     mp_file = 'mp_' + time + '.csv'
     mp_file = os.path.join(mp_path, mp_file)
     mp_data = np.loadtxt(mp_file, delimiter=',')
-    day = np.array([u_data, v_data, t_data, mp_data])
-    data.append(day)
+    u1 = u_data[:,:180]
+    u2 = u_data[:,180:]
+    v1 = v_data[:,:180]
+    v2 = v_data[:,180:]
+    t1 = t_data[:,:180]
+    t2 = t_data[:,180:]
+    mp1 = mp_data[:,:180]
+    mp2 = mp_data[:,180:]
+
+    day1 = np.array([u1, v1, t1, mp1])
+    data.append(day1)
+    day2 = np.array([u2, v2, t2, mp2])
+    data.append(day2)
     current_date += dt.timedelta(days=1)
 data = np.array(data)
 
 
 # 将数据集划分为训练集和测试集
 dataset = MPDataset(data)
-print(len(dataset))
 train_data, val_data = train_test_split(dataset, test_size=0.3, random_state=42)
 # 创建 DataLoader 对象
 nw = min([os.cpu_count(), batch_size if batch_size > 1 else 0, 8])  # number of workers
